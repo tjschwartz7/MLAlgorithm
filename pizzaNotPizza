@@ -1,3 +1,7 @@
+#This code was originally written by whxna-0615
+#Updated by me to change the data inputs, cnn, and add more features
+#Source code located at: https://www.kaggle.com/code/jiaowoguanren/pizza-or-not-pizza-classification-tf-acc-0-99
+
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
