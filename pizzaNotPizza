@@ -1,0 +1,133 @@
+
+#Code based on code written by whxna-0615 on kaggle-
+#Edits have been made to change the way data is input
+#Original code here - https://www.kaggle.com/code/jiaowoguanren/pizza-or-not-pizza-classification-tf-acc-0-99
+
+
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import tensorflow as tf
+import os
+import shutil
+import tempfile
+import matplotlib.pyplot as plt
+from PIL import Image
+import numpy as np
+from sklearn.metrics import classification_report
+import torch
+import cv2
+from tensorflow import keras
+from tensorflow.keras import Sequential
+from sklearn import preprocessing
+from sklearn.preprocessing import OneHotEncoder
+from tensorflow.keras.optimizers import Adam
+
+from tensorflow.keras import utils
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.utils import image_dataset_from_directory
+
+import pathlib, os, random, mplcyberpunk, splitfolders
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.layers import BatchNormalization, Dense, Dropout, Flatten, MaxPooling2D, Conv2D, Activation
+
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+#for dirname, _, filenames in os.walk('/kaggle/input'):
+    #for filename in filenames:
+        #print(os.path.join(dirname, filename))
+        
+data_dir = "C:\\Users\\tjsch\\source\\repos\\pyDa\\archive\\pizza_not_pizza\\"
+
+
+data_bs = "C:\\Users\\tjsch\\source\\repos\\pyDa\\archive\\pizza_not_pizza\\"
+data_bs = pathlib.Path(data_bs)
+data_bs       
+
+
+
+splitfolders.ratio(data_bs, output='C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\', seed=1234, ratio=(0.7, 0.15, 0.15), group_prefix=None)
+
+datagen = ImageDataGenerator(rescale=1.0 / 255)
+img_height, img_width = 300, 300
+input_shape = (img_height, img_width, 3)
+batch_size = 32
+
+
+
+
+#train_ds = datagen.flow_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\train\\', target_size=(img_height, img_width), class_mode='binary', batch_size=batch_size, subset='training')
+#train_ds, train_labels = next(image_dataset_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\train\\', image_size=(img_height, img_width), labels='inferred', batch_size=batch_size, subset='training', validation_split=.3, seed=1234))
+train_ds, train_labels = next(datagen.flow_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\train\\', classes=["pizza", "not_pizza"], target_size=(256,256)))
+#test_ds = datagen.flow_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\test\\', target_size=(img_height, img_width), class_mode='binary', batch_size=batch_size, shuffle=False)
+#test_ds, test_labels = next(image_dataset_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\test\\', image_size=(img_height, img_width), labels='inferred', batch_size=batch_size, shuffle=False, validation_split=.3))
+test_ds, test_labels = next(datagen.flow_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\test\\', classes=["pizza", "not_pizza"], target_size=(256,256)))
+#val_ds = datagen.flow_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\val\\', target_size=(img_height, img_width), class_mode='binary', batch_size=batch_size, shuffle=False)
+#val_ds = image_dataset_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\val\\', image_size=(img_height, img_width), class_mode='binary', batch_size=batch_size, shuffle=False)
+val_ds, val_labels = next(datagen.flow_from_directory('C:\\Users\\tjsch\\source\\repos\\pyDa\\Imgs\\val\\', classes=["pizza", "not_pizza"], target_size=(256,256)))
+
+print(train_ds.shape)
+print(test_ds.shape)
+print(train_labels.shape)
+print(test_labels.shape)
+print(test_labels)
+
+model = Sequential([
+    Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding='same'),
+    Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2),strides=2),
+    Conv2D(filters=64, kernel_size=(3,3), activation='relu', padding='same'),
+    Conv2D(filters=64, kernel_size=(3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2),strides=2),
+    Flatten(),
+    Dropout(.4),
+    Dense(2, activation='softmax'),
+])
+
+model.compile(optimizer=Adam(learning_rate=.0001),
+             loss='categorical_crossentropy',
+             metrics=['accuracy'])
+             
+
+checkpoint_save_path = 'C:\\Users\\tjsch\\source\\repos\\pyDa\\Model.ckpt'
+if os.path.exists(checkpoint_save_path + '.index'):
+    print('---------------------------------------Loading---------------------------------------')
+    model.load_weights(checkpoint_save_path)
+
+model.summary()
+
+file = open(data_dir + './Weights.txt', 'w')
+for v in model.trainable_variables:
+    file.write(str(v.name) + '\n')
+    file.write(str(v.shape) + '\n')
+    file.write(str(v.numpy()) + '\n')
+    
+file.close()       
+
+acc = history.history['accuracy']
+loss = history.history['loss']
+
+plt.figure(figsize=(16, 8))
+plt.style.use('cyberpunk')
+plt.subplot(1, 2, 1)
+plt.plot(acc, label='Acc')
+plt.title('Model Acc')
+mplcyberpunk.add_glow_effects()
+
+
+plt.subplot(1, 2, 2)
+plt.plot(loss, label='Loss')
+plt.title('Model Loss')
+mplcyberpunk.add_glow_effects()
+
+
+plt.show()
+
+# Calculate Test loss and Test Accuracy
+test_loss, test_acc = model.evaluate(test_ds, test_labels, batch_size=batch_size)
+
+# Print Test loss and Test Accuracy
+print(f"Test Loss: {test_loss}\nTest Accuracy : {test_acc * 100} %")
+        
