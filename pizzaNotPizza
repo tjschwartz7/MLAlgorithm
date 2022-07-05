@@ -1,9 +1,3 @@
-
-#Code based on code written by whxna-0615 on kaggle-
-#Edits have been made to change the way data is input
-#Original code here - https://www.kaggle.com/code/jiaowoguanren/pizza-or-not-pizza-classification-tf-acc-0-99
-
-
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
 # For example, here's several helpful packages to load
@@ -23,6 +17,8 @@ from tensorflow.keras import Sequential
 from sklearn import preprocessing
 from sklearn.preprocessing import OneHotEncoder
 from tensorflow.keras.optimizers import Adam
+from tensorflow import math
+from tensorflow.math import confusion_matrix
 
 from tensorflow.keras import utils
 from tensorflow.keras.utils import to_categorical
@@ -38,13 +34,12 @@ from tensorflow.keras.layers import BatchNormalization, Dense, Dropout, Flatten,
 #for dirname, _, filenames in os.walk('/kaggle/input'):
     #for filename in filenames:
         #print(os.path.join(dirname, filename))
-        
 data_dir = "C:\\Users\\tjsch\\source\\repos\\pyDa\\archive\\pizza_not_pizza\\"
 
 
 data_bs = "C:\\Users\\tjsch\\source\\repos\\pyDa\\archive\\pizza_not_pizza\\"
 data_bs = pathlib.Path(data_bs)
-data_bs       
+data_bs
 
 
 
@@ -54,7 +49,6 @@ datagen = ImageDataGenerator(rescale=1.0 / 255)
 img_height, img_width = 300, 300
 input_shape = (img_height, img_width, 3)
 batch_size = 32
-
 
 
 
@@ -75,26 +69,45 @@ print(test_labels.shape)
 print(test_labels)
 
 model = Sequential([
-    Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding='same'),
+    Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding='same', input_shape=(256,256,3)),
     Conv2D(filters=32, kernel_size=(3,3), activation='relu', padding='same'),
     MaxPooling2D(pool_size=(2,2),strides=2),
-    Conv2D(filters=64, kernel_size=(3,3), activation='relu', padding='same'),
+    Conv2D(filters=64, kernel_size=(3,3), activation='relu', padding='same', input_shape=(128,128,32)),
     Conv2D(filters=64, kernel_size=(3,3), activation='relu', padding='same'),
     MaxPooling2D(pool_size=(2,2),strides=2),
+    Conv2D(filters=128, kernel_size=(3,3), activation='relu', padding='same', input_shape=(64,64,64)),
+    Conv2D(filters=128, kernel_size=(3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2),strides=2), 
+    Conv2D(filters=256, kernel_size=(3,3), activation='relu', padding='same', input_shape=(32,32,128)),
+    Conv2D(filters=256, kernel_size=(3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2),strides=2),
+    Conv2D(filters=512, kernel_size=(3,3), activation='relu', padding='same', input_shape=(16,16,256)),
+    Conv2D(filters=512, kernel_size=(3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2),strides=2),  
+    Conv2D(filters=1024, kernel_size=(3,3), activation='relu', padding='same', input_shape=(8,8,512)),
+    Conv2D(filters=1024, kernel_size=(3,3), activation='relu', padding='same'),
+    MaxPooling2D(pool_size=(2,2),strides=2),        
     Flatten(),
-    Dropout(.4),
+    Dropout(.5),
+    Dense(512, activation='relu'),
+    Dense(256, activation='relu'),    
     Dense(2, activation='softmax'),
 ])
 
 model.compile(optimizer=Adam(learning_rate=.0001),
-             loss='categorical_crossentropy',
+             loss='binary_crossentropy',
              metrics=['accuracy'])
-             
+
 
 checkpoint_save_path = 'C:\\Users\\tjsch\\source\\repos\\pyDa\\Model.ckpt'
 if os.path.exists(checkpoint_save_path + '.index'):
     print('---------------------------------------Loading---------------------------------------')
     model.load_weights(checkpoint_save_path)
+
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_save_path, save_best_only=True, save_weights_only=True)
+history = model.fit(train_ds, train_labels, epochs=10, batch_size=batch_size, callbacks=[cp_callback], validation_data=(val_ds, val_labels), verbose=1, steps_per_epoch = len(train_ds)/batch_size, validation_steps = len(test_ds)/batch_size)
+
+# history = model.fit(train_ds, epochs=3, batch_size=batch_size)
 
 model.summary()
 
@@ -104,7 +117,7 @@ for v in model.trainable_variables:
     file.write(str(v.shape) + '\n')
     file.write(str(v.numpy()) + '\n')
     
-file.close()       
+file.close()
 
 acc = history.history['accuracy']
 loss = history.history['loss']
@@ -125,9 +138,13 @@ mplcyberpunk.add_glow_effects()
 
 plt.show()
 
-# Calculate Test loss and Test Accuracy
-test_loss, test_acc = model.evaluate(test_ds, test_labels, batch_size=batch_size)
 
-# Print Test loss and Test Accuracy
+test_loss, test_acc = model.evaluate(test_ds, test_labels, batch_size=batch_size)
+testPred = model.predict(test_ds)
+
 print(f"Test Loss: {test_loss}\nTest Accuracy : {test_acc * 100} %")
-        
+
+true_class = tf.argmax( test_labels, 1 )
+predicted_class = tf.argmax(testPred, 1 )
+
+confusion_matrix( true_class, predicted_class, 2 )
